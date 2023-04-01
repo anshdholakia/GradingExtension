@@ -14,8 +14,11 @@ document.addEventListener("DOMContentLoaded", function() {
 // getting back the message from the content js about the status of the grading
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        if( request.message === "start" ) {
-            start();
+        if( request.status === "off" ) {
+            console.log("It is off");
+        }
+        else{
+            console.log("It is on");
         }
     }
 );

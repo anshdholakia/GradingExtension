@@ -12,6 +12,8 @@ function addGradingSection() {
     document.body.appendChild(element);
 }
 
+let grade_status = false;
+
 // adding a listener to the content to listen to messages from the popup js when it is opened
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -19,7 +21,12 @@ chrome.runtime.onMessage.addListener(
             // sending a message to the popup.js to keep the switch unchecked
             chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
                 var activeTab = tabs[0];
-                chrome.tabs.sendMessage(activeTab.id, { "status": "off" });
+                if (!grade_status) {
+                    chrome.tabs.sendMessage(activeTab.id, { "status": "off" });
+                }
+                else {
+                    chrome.tabs.sendMessage(activeTab.id, { "status": "on" });
+                }
             });
 
         }
