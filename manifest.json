@@ -3,6 +3,9 @@
     "description": "This Extension helps teaching assistants to grade student assignments",
     "version": "1.0",
     "manifest_version": 3,
+    "permissions":[
+      "contextMenus"
+    ],
     "action": {
       "default_popup": "popup/index.html",
       "default_icon": "images/logo.png"
