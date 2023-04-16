@@ -48,21 +48,24 @@ function addFeedbackToBB(text, deduction) {
 
 function addGradingPoint(plate) {
   let element = document.createElement("div");
-  const add_feedback_button = document.createElement("button");
-  add_feedback_button.innerText = "Apply";
-  add_feedback_button.style.color="white";
-  add_feedback_button.style.backgroundColor="#14294f";
-  add_feedback_button.style.padding="1px";
-  element.appendChild(add_feedback_button);
-  add_feedback_button.addEventListener('click',()=>{
-    console.log("Hiii");
-    // addFeedbackToBB(feedback_area.value,textarea.value)
-  });
   element.style.cssText = 'display: flex; background-color: #0f294e; height:55px; margin:0px 0px 2px 0px; justify-content: center;'
-  element.innerHTML += '<label style="color:white; font-size:10px; margin:0px 4px">Feedback</label>';
+  const add_button = document.createElement("button");
+  add_button.innerText = "Apply";
+  add_button.style.color = "black";
+  add_button.style.backgroundColor = "white";
+  add_button.style.padding = "2px";
+
+  element.appendChild(add_button);
+  add_button.addEventListener('click', () => {
+    console.log(feedback_area.value, textarea.value);
+  })
+  const feedbacklabel = document.createElement("label");
+  feedbacklabel.style.cssText = "color:white; font-size:10px; margin:0px 4px;";
+  feedbacklabel.innerText = "Feedback";
   const feedback_area = document.createElement("textarea");
   feedback_area.style.cssText = 'width:215px; height:40px; resize:none;';
-  element.getElementsByTagName("label")[0].appendChild(feedback_area);
+  feedbacklabel.appendChild(feedback_area);
+  element.appendChild(feedbacklabel);
   const gradelabel = document.createElement("label");
   gradelabel.style.cssText = 'color:white; font-size:10px; margin-left:auto;';
   gradelabel.innerText = "Deduction";
@@ -72,30 +75,32 @@ function addGradingPoint(plate) {
   textarea.style.marginLeft = "auto";
   textarea.style.resize = "none";
   textarea.addEventListener('input', (e) => {
-    if (e.target.value.length <= 5) {
-      e.target.value = e.target.value.replace(/[^0-9-+]/g, '');
-    }
-    else{
-      e.target.value=e.target.value.slice(0, e.target.value.length-1);
+
+    e.target.value = e.target.value.replace(/[^0-9-+]/g, '');
+
+    if (e.target.value.length > 5) {
+      e.target.value = e.target.value.slice(0, e.target.value.length - 1);
     }
   });
-  
+
 
   gradelabel.appendChild(textarea);
-  
+
   element.appendChild(gradelabel);
   const delete_button = document.createElement("button");
   delete_button.innerText = "X";
-  delete_button.style.color="white";
-  delete_button.style.backgroundColor="red";
-  delete_button.style.padding="2px";
-  
+  delete_button.style.color = "white";
+  delete_button.style.backgroundColor = "red";
+  delete_button.style.padding = "2px";
+
   element.appendChild(delete_button);
-  delete_button.addEventListener('click', ()=>{
+  delete_button.addEventListener('click', () => {
     plate.removeChild(element);
   })
 
-  
+
+
+
 
   return element;
 }
@@ -106,7 +111,6 @@ function addMenuAndPlate() {
   parentMenu.style.cssText = 'display: flex; height:30px;';
   let saveButton = document.createElement("button");
   let newButton = document.createElement("button");
-  saveButton.classList.add('btn', 'btn-primary');
   newButton.innerText = "New +";
   saveButton.innerText = "Save";
   let buttonStyle = 'display:flex; justify-content:center; align-items:center; background-color: navy; color:white; padding:2px; width:50px;';
@@ -118,7 +122,7 @@ function addMenuAndPlate() {
   let plate = document.createElement("div");
   plate.classList.add("scrollable");
   plate.style.height = "366px";
-  plate.style.overflowX="hidden";
+  plate.style.overflowX = "hidden";
   plate.style.overflowY = "auto";
   let scrollbar_style = document.createElement("style");
   scrollbar_style.textContent = `
