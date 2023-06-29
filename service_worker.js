@@ -1,28 +1,10 @@
-// Open the database
-const openRequest = indexedDB.open("myDatabase");
-
-
-openRequest.onupgradeneeded = function (event) {
-  const db = event.target.result;
-  // Create object store "gradestate" if it doesn't exist
-  console.log("Creating object");
-  if (!db.objectStoreNames.contains("gradestate")) {
-    db.createObjectStore("gradestate");
+chrome.runtime.onMessage.addListener(
+  function (request, sender, sendResponse) {
+    if (request.message === "receive_status")
+      sendToPopup(request.status);
   }
-};
+);
 
-function addData(db, value, key) {
-  const transaction = db.transaction("gradestate", "readwrite");
-  const store = transaction.objectStore("gradestate");
-  const request = store.add({ state: value }, key);
-
-  request.onsuccess = function () {
-    console.log("Data added successfully");
-  };
+async function sendToPopup(message) {
+  await chrome.runtime.sendMessage({ message: "receive_status", status: message });
 }
-
-
-openRequest.onsuccess = function (event) {
-  const db = event.target.result;
-  addData(db, true, 1);
-};
