@@ -30,21 +30,48 @@ function updateState(id, newState) {
       let record = getRequest.result;
       if (record) {
         record.state = newState;
-        let putRequest = store.put(record);
-        putRequest.onsuccess = function (e) {
-          console.log("Success in updating record");
-        };
-        putRequest.onerror = function (e) {
-          console.log("Error in updating record: " + e.target.error.name);
-        };
+        store.put(record);
       }
-    };
-    getRequest.onerror = function (e) {
-      console.log("Error in getting record: " + e.target.error.name);
     };
   };
 }
 
+function addFeedbackToTable(array_of_feedbacks, title) {
+  if (!title) {
+    return;
+  }
+  if (array_of_feedbacks.length == 0) {
+    alert('Empty feedback not allowed');
+    return;
+  }
+  let openRequest = indexedDB.open("myDatabase", 1);
+  openRequest.onsuccess = function (e) {
+    let db = e.target.result;
+    let transaction = db.transaction("feedback_storage", "readwrite");
+    let store = transaction.objectStore("feedback_storage");
+    let request = store.openCursor();
+    request.onsuccess = function (event) {
+      let cursor = event.target.result;
+      if (cursor) {
+        if (cursor.value.title == title) {
+          alert('Feedback with same title already exists');
+          return;
+        }
+        // Continue to the next item in the cursor
+        cursor.continue();
+      } else {
+        let addRequest = store.add({ feedback_array: array_of_feedbacks, title: title });
+        addRequest.onsuccess = function (event) {
+          alert('Record added successfully');
+        };
+        addRequest.onerror = function (event) {
+          alert('Error adding record');
+        };
+
+      }
+    };
+  };
+}
 
 
 function removeGradingSection() {
@@ -61,6 +88,9 @@ const openRequest = indexedDB.open("myDatabase", 1);
 openRequest.onupgradeneeded = function (event) {
   let db = event.target.result;
   let objectStore = db.createObjectStore('gradestate', { keyPath: 'id' });
+  let feedbackStorage = db.createObjectStore('feedback_storage', { keyPath: 'id', autoIncrement: true });
+  feedbackStorage.createIndex('title', 'title', { unique: false });
+  feedbackStorage.createIndex('feedback_array', 'feedback_array', { unique: false });
   objectStore.createIndex('state', 'state', { unique: false });
 };
 
@@ -68,13 +98,7 @@ openRequest.onsuccess = function (event) {
   let db = event.target.result;
   let transaction = db.transaction('gradestate', 'readwrite');
   let objectStore = transaction.objectStore('gradestate');
-  let addRequest = objectStore.add({ id: 1, state: false });
-  addRequest.onsuccess = function (event) {
-    console.log('Record added successfully');
-  };
-  addRequest.onerror = function (event) {
-    console.log('Error adding record');
-  };
+  objectStore.add({ id: 1, state: false });
   getData(db, 1);
 }
 
@@ -91,7 +115,6 @@ function addGradingPoint(plate) {
   add_button.style.color = "black";
   add_button.style.backgroundColor = "white";
   add_button.style.padding = "2px";
-
   element.appendChild(add_button);
   add_button.addEventListener('click', () => {
     addFeedbackToBB(feedback_area.value, textarea.value);
@@ -112,9 +135,7 @@ function addGradingPoint(plate) {
   textarea.style.marginLeft = "auto";
   textarea.style.resize = "none";
   textarea.addEventListener('input', (e) => {
-
     e.target.value = e.target.value.replace(/[^0-9-+]/g, '');
-
     if (e.target.value.length > 5) {
       e.target.value = e.target.value.slice(0, e.target.value.length - 1);
     } else if (e.target.value.length > 1) {
@@ -124,17 +145,13 @@ function addGradingPoint(plate) {
       }
     }
   });
-
-
   gradelabel.appendChild(textarea);
-
   element.appendChild(gradelabel);
   const delete_button = document.createElement("button");
   delete_button.innerText = "X";
   delete_button.style.color = "white";
   delete_button.style.backgroundColor = "red";
   delete_button.style.padding = "2px";
-
   element.appendChild(delete_button);
   delete_button.addEventListener('click', () => {
     plate.removeChild(element);
@@ -150,7 +167,8 @@ function save_to_indexdb(plate) {
     scorearea = labels[1].children[0]
     array_of_feedbacks.push([textarea.value, scorearea.value]);
   });
-  console.log(array_of_feedbacks);
+  let title = prompt("Please enter preferred title", "Assignment 1 Feedback");
+  addFeedbackToTable(array_of_feedbacks, title);
 }
 
 function addMenuAndPlate() {
@@ -210,20 +228,16 @@ function getData(db, key) {
   const store = transaction.objectStore("gradestate");
   const request = store.get(key);
   request.onsuccess = function () {
-    console.log(request.result.state);
     if (request.result.state) {
-      console.log("Inserting grading section");
       addGradingSection();
     }
     else {
-      console.log("Removing grading section");
       removeGradingSection();
     }
   };
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(request.message);
   if (request.message == "show_panel") {
     updateState(1, true);
     let openRequest = indexedDB.open("myDatabase", 1);
@@ -248,7 +262,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const store = transaction.objectStore("gradestate");
       const request = store.get(1);
       request.onsuccess = async function () {
-          await chrome.runtime.sendMessage({ message: "receive_status", status: request.result.state });
+        await chrome.runtime.sendMessage({ message: "receive_status", status: request.result.state });
       }
     }
 
