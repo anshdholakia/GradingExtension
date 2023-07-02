@@ -57,9 +57,6 @@ function updateState(id, newState) {
 }
 
 function addFeedbackToTable(array_of_feedbacks, title, type) {
-  if (!title) {
-    return;
-  }
   array_of_feedbacks = array_of_feedbacks.filter(x => x[0] || x[1])
   console.log(array_of_feedbacks);
   if (array_of_feedbacks.length == 0) {
@@ -126,6 +123,7 @@ function addGradingPoint(plate) {
   add_button.style.color = "black";
   add_button.style.backgroundColor = "white";
   add_button.style.padding = "2px";
+  add_button.style.border = "2px solid black";
   element.appendChild(add_button);
   add_button.addEventListener('click', () => {
     addFeedbackToBB(feedback_area.value, textarea.value);
@@ -179,7 +177,30 @@ function save_to_indexdb(plate) {
     array_of_feedbacks.push([textarea.value, scorearea.value]);
   });
   let title = prompt("Please enter preferred title", "Assignment 1 Feedback");
-  addFeedbackToTable(array_of_feedbacks, title, "save");
+  if(!title){
+    let gradingsec = document.getElementById("gradingsec");
+    if (gradingsec.childNodes[0].childNodes.length > 2) {
+      gradingsec.childNodes[0].childNodes[1].remove();
+      gradingsec.childNodes[0].childNodes[1].remove();
+    }
+    gradingsec.childNodes[0].childNodes[0].insertAdjacentHTML('afterend', `<p style="overflow-y: auto;height: inherit;">Title: ${title}</p><button id="edit_button">Edit</button>`);
+    let edit_button = document.getElementById("edit_button");
+    edit_button.style.cssText = 'display:flex; justify-content:center; align-items:center; background-color: navy; color:white; padding:2px; width:50px;margin-left:auto;';
+    edit_button.addEventListener('click', () => {
+      let userResponse = confirm("Do you want to edit existing feedback?");
+      if (userResponse) {
+        array_of_feedbacks = []
+        plate.childNodes.forEach(element => {
+          labels = element.getElementsByTagName('label');
+          textarea = labels[0].children[0]
+          scorearea = labels[1].children[0]
+          array_of_feedbacks.push([textarea.value, scorearea.value]);
+        });
+        addFeedbackToTable(array_of_feedbacks, title, "edit");
+      }
+    })
+    addFeedbackToTable(array_of_feedbacks, title, "save");
+  }
 }
 
 function addMenuAndPlate() {
