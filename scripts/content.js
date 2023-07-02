@@ -277,6 +277,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const transaction_grade = db.transaction("gradestate", "readonly");
       const store_grade = transaction_grade.objectStore("gradestate");
       const request_grade = store_grade.get(1);
+      request_grade.onsuccess = async function (event) {
+        await chrome.runtime.sendMessage({ message: "receive_status", content: request_grade.result.state });
+      }
       request_feedback.onsuccess = async function (event) {
         let cursor = event.target.result;
         if (cursor) {
@@ -284,9 +287,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           cursor.continue();
         }
         else {
-          await chrome.runtime.sendMessage({ message: "receive_status", status: request_grade.result.state, feedbacks: final_feedback_array });
+          await chrome.runtime.sendMessage({ message: "receive_feedbacks", content: final_feedback_array });
         }
       }
+      request_feedback.onerror = function (event) {
+        alert("Error getting feedbacks");
+      }
+
     }
   } else if (request.message === "send_feedback") {
     received_feedbacks(request.content, request.title);
@@ -298,7 +305,7 @@ function received_feedbacks(content, title) {
   var userResponse = confirm("Do you want to continue importing new feedback? This will clear existing feedback on screen");
   if (userResponse) {
     let gradingsec = document.getElementById("gradingsec");
-    if(gradingsec.childNodes[0].childNodes.length > 2){
+    if (gradingsec.childNodes[0].childNodes.length > 2) {
       gradingsec.childNodes[0].childNodes[1].remove();
       gradingsec.childNodes[0].childNodes[1].remove();
     }

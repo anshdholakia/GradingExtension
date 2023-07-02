@@ -42,10 +42,11 @@ function display_all_feedbacks(array_of_feedbacks){
 chrome.runtime.onMessage.addListener(
   function (request, sender, sendResponse) {
     if (request.message === "receive_status") {
-      if (request.status !== undefined) {
-        document.getElementById("gradingornot").checked = request.status;
-        display_all_feedbacks(request.feedbacks);
+      if (request.content !== undefined) {
+        document.getElementById("gradingornot").checked = request.content;
       }
+    } else if (request.message === "receive_feedbacks") {
+      display_all_feedbacks(request.content);
     }
   }
 );
