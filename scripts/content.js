@@ -1,3 +1,23 @@
+// Open or create the database
+const openRequest = indexedDB.open("myDatabase", 1);
+const inline = 1;
+openRequest.onupgradeneeded = function (event) {
+  let db = event.target.result;
+  let objectStore = db.createObjectStore('gradestate', { keyPath: 'id' });
+  let feedbackStorage = db.createObjectStore('feedback_storage', { keyPath: 'id', autoIncrement: true });
+  feedbackStorage.createIndex('title', 'title', { unique: false });
+  feedbackStorage.createIndex('feedback_array', 'feedback_array', { unique: false });
+  objectStore.createIndex('state', 'state', { unique: false });
+};
+
+openRequest.onsuccess = function (event) {
+  let db = event.target.result;
+  let transaction = db.transaction('gradestate', 'readwrite');
+  let objectStore = transaction.objectStore('gradestate');
+  objectStore.add({ id: 1, state: false });
+  getData(db, 1);
+}
+
 function addGradingSection() {
   let element = document.getElementById("gradingsec");
   if (element) {
@@ -40,6 +60,8 @@ function addFeedbackToTable(array_of_feedbacks, title) {
   if (!title) {
     return;
   }
+  array_of_feedbacks = array_of_feedbacks.filter(x => x[0] || x[1])
+  console.log(array_of_feedbacks);
   if (array_of_feedbacks.length == 0) {
     alert('Empty feedback not allowed');
     return;
@@ -57,7 +79,6 @@ function addFeedbackToTable(array_of_feedbacks, title) {
           alert('Feedback with same title already exists');
           return;
         }
-        // Continue to the next item in the cursor
         cursor.continue();
       } else {
         let addRequest = store.add({ feedback_array: array_of_feedbacks, title: title });
@@ -79,27 +100,6 @@ function removeGradingSection() {
   if (element) {
     element.style.display = "none";
   }
-}
-
-
-// Open or create the database
-const openRequest = indexedDB.open("myDatabase", 1);
-
-openRequest.onupgradeneeded = function (event) {
-  let db = event.target.result;
-  let objectStore = db.createObjectStore('gradestate', { keyPath: 'id' });
-  let feedbackStorage = db.createObjectStore('feedback_storage', { keyPath: 'id', autoIncrement: true });
-  feedbackStorage.createIndex('title', 'title', { unique: false });
-  feedbackStorage.createIndex('feedback_array', 'feedback_array', { unique: false });
-  objectStore.createIndex('state', 'state', { unique: false });
-};
-
-openRequest.onsuccess = function (event) {
-  let db = event.target.result;
-  let transaction = db.transaction('gradestate', 'readwrite');
-  let objectStore = transaction.objectStore('gradestate');
-  objectStore.add({ id: 1, state: false });
-  getData(db, 1);
 }
 
 function addFeedbackToBB(text, score) {
@@ -186,6 +186,7 @@ function addMenuAndPlate() {
   parentMenu.appendChild(saveButton);
   element.appendChild(parentMenu);
   let plate = document.createElement("div");
+  plate.id = "plate";
   plate.classList.add("scrollable");
   plate.style.height = "366px";
   plate.style.overflowX = "hidden";
@@ -258,13 +259,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     let openRequest = indexedDB.open("myDatabase", 1);
     openRequest.onsuccess = function (e) {
       let db = e.target.result;
-      const transaction = db.transaction("gradestate", "readonly");
-      const store = transaction.objectStore("gradestate");
-      const request = store.get(1);
-      request.onsuccess = async function () {
-        await chrome.runtime.sendMessage({ message: "receive_status", status: request.result.state });
+      const transaction_feedback = db.transaction("feedback_storage", "readonly");
+      const store_feedback = transaction_feedback.objectStore("feedback_storage");
+      let request_feedback = store_feedback.openCursor();
+      const final_feedback_array = [];
+      const transaction_grade = db.transaction("gradestate", "readonly");
+      const store_grade = transaction_grade.objectStore("gradestate");
+      const request_grade = store_grade.get(1);
+      request_feedback.onsuccess = async function (event) {
+        let cursor = event.target.result;
+        if (cursor) {
+          final_feedback_array.push({ title: cursor.value.title, feedback_array: cursor.value.feedback_array });
+          cursor.continue();
+        }
+        else {
+          await chrome.runtime.sendMessage({ message: "receive_status", status: request_grade.result.state, feedbacks: final_feedback_array });
+        }
       }
     }
-
+  } else if (request.message === "send_feedback") {
+    var userResponse = confirm("Do you want to continue importing new feedback? This will clear existing feedback on screen");
+    if (userResponse) {
+      let gradingsec = document.getElementById("gradingsec");
+      gradingsec.childNodes[0].childNodes[0].insertAdjacentHTML('afterend', `<p>Title: ${request.title}</p>`);
+      let plate = document.getElementById("plate");
+      plate.innerHTML = "";
+      request.content.forEach(element => {
+        point = addGradingPoint(plate);
+        point.getElementsByTagName('textarea')[0].value = element[0];
+        point.getElementsByTagName('textarea')[1].value = element[1];
+        plate.appendChild(point);
+      });
+    }
   }
 })

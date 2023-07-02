@@ -1,13 +1,26 @@
-*{
-    margin:0;
-    padding:0;
-
+* {
+  margin: 0;
+  padding: 0;
 }
 
-body{
-    width:300px;
-    display:flex;
-    align-items: center;
-    flex-direction: column;
-    height:300px;
+body {
+  width: 300px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  height: 300px;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+#list_of_feedbacks {
+  height: auto;
+  overflow: hidden;
+  overflow-y: auto;
+  margin: 8px auto 0px 0px;
 }
