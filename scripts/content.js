@@ -56,7 +56,7 @@ function updateState(id, newState) {
   };
 }
 
-function addFeedbackToTable(array_of_feedbacks, title) {
+function addFeedbackToTable(array_of_feedbacks, title, type) {
   if (!title) {
     return;
   }
@@ -76,6 +76,18 @@ function addFeedbackToTable(array_of_feedbacks, title) {
       let cursor = event.target.result;
       if (cursor) {
         if (cursor.value.title == title) {
+          if (type == "edit") {
+            const updateData = cursor.value; // Get the old value
+            updateData.feedback_array = array_of_feedbacks; // Modify the property
+            const requestUpdate = cursor.update(updateData);
+            requestUpdate.onsuccess = function () {
+              alert("Update successful.");
+            };
+            requestUpdate.onerror = function () {
+              alert("Update failed.");
+            }
+            return;
+          }
           alert('Feedback with same title already exists');
           return;
         }
@@ -93,7 +105,6 @@ function addFeedbackToTable(array_of_feedbacks, title) {
     };
   };
 }
-
 
 function removeGradingSection() {
   let element = document.getElementById("gradingsec");
@@ -168,7 +179,7 @@ function save_to_indexdb(plate) {
     array_of_feedbacks.push([textarea.value, scorearea.value]);
   });
   let title = prompt("Please enter preferred title", "Assignment 1 Feedback");
-  addFeedbackToTable(array_of_feedbacks, title);
+  addFeedbackToTable(array_of_feedbacks, title, "save");
 }
 
 function addMenuAndPlate() {
@@ -278,18 +289,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }
   } else if (request.message === "send_feedback") {
-    var userResponse = confirm("Do you want to continue importing new feedback? This will clear existing feedback on screen");
-    if (userResponse) {
-      let gradingsec = document.getElementById("gradingsec");
-      gradingsec.childNodes[0].childNodes[0].insertAdjacentHTML('afterend', `<p>Title: ${request.title}</p>`);
-      let plate = document.getElementById("plate");
-      plate.innerHTML = "";
-      request.content.forEach(element => {
-        point = addGradingPoint(plate);
-        point.getElementsByTagName('textarea')[0].value = element[0];
-        point.getElementsByTagName('textarea')[1].value = element[1];
-        plate.appendChild(point);
-      });
-    }
+    received_feedbacks(request.content, request.title);
   }
+
 })
+
+function received_feedbacks(content, title) {
+  var userResponse = confirm("Do you want to continue importing new feedback? This will clear existing feedback on screen");
+  if (userResponse) {
+    let gradingsec = document.getElementById("gradingsec");
+    if(gradingsec.childNodes[0].childNodes.length > 2){
+      gradingsec.childNodes[0].childNodes[1].remove();
+      gradingsec.childNodes[0].childNodes[1].remove();
+    }
+    gradingsec.childNodes[0].childNodes[0].insertAdjacentHTML('afterend', `<p style="overflow-y: auto;height: inherit;">Title: ${title}</p><button id="edit_button">Edit</button>`);
+    let edit_button = document.getElementById("edit_button");
+    edit_button.style.cssText = 'display:flex; justify-content:center; align-items:center; background-color: navy; color:white; padding:2px; width:50px;margin-left:auto;';
+    let plate = document.getElementById("plate");
+    plate.innerHTML = "";
+    content.forEach(element => {
+      point = addGradingPoint(plate);
+      point.getElementsByTagName('textarea')[0].value = element[0];
+      point.getElementsByTagName('textarea')[1].value = element[1];
+      plate.appendChild(point);
+    });
+    edit_button.addEventListener('click', () => {
+      let userResponse = confirm("Do you want to edit existing feedback?");
+      if (userResponse) {
+        array_of_feedbacks = []
+        plate.childNodes.forEach(element => {
+          labels = element.getElementsByTagName('label');
+          textarea = labels[0].children[0]
+          scorearea = labels[1].children[0]
+          array_of_feedbacks.push([textarea.value, scorearea.value]);
+        });
+        addFeedbackToTable(array_of_feedbacks, title, "edit");
+      }
+    })
+  }
+}
