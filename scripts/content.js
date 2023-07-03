@@ -57,8 +57,7 @@ function updateState(id, newState) {
 }
 
 function addFeedbackToTable(array_of_feedbacks, title, type) {
-  array_of_feedbacks = array_of_feedbacks.filter(x => x[0] || x[1])
-  console.log(array_of_feedbacks);
+  array_of_feedbacks = array_of_feedbacks.filter(x => x[0] || x[1]);
   if (array_of_feedbacks.length == 0) {
     alert('Empty feedback not allowed');
     return;
@@ -111,8 +110,16 @@ function removeGradingSection() {
 }
 
 function addFeedbackToBB(text, score) {
+  // cannot access the element due to shadow dom restriction
   console.log(text);
   console.log(score);
+  // var iframe = document.getElementsByClassName('classic-learn-iframe')[0];
+  // Get a reference to the document inside the iframe
+  // var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+  // total_points = document.getElementById("currentAttempt_pointsPossible");
+  // total_points = parseInt(total_points.innerText.slice(1));
+  // feedback_textarea = document.getElementById("tinymce")
+  // feedback_textarea.innerHTML += `<p>${text}</p>`
 }
 
 function addGradingPoint(plate) {
@@ -168,7 +175,7 @@ function addGradingPoint(plate) {
   return element;
 }
 
-function save_to_indexdb(plate) {
+function get_current_feedbacks(plate){
   array_of_feedbacks = []
   plate.childNodes.forEach(element => {
     labels = element.getElementsByTagName('label');
@@ -176,8 +183,13 @@ function save_to_indexdb(plate) {
     scorearea = labels[1].children[0]
     array_of_feedbacks.push([textarea.value, scorearea.value]);
   });
+  return array_of_feedbacks;
+}
+
+function save_to_indexdb(plate) {
+  array_of_feedbacks = get_current_feedbacks(plate);
   let title = prompt("Please enter preferred title", "Assignment 1 Feedback");
-  if(!title){
+  if(title !== undefined){
     let gradingsec = document.getElementById("gradingsec");
     if (gradingsec.childNodes[0].childNodes.length > 2) {
       gradingsec.childNodes[0].childNodes[1].remove();
@@ -189,14 +201,7 @@ function save_to_indexdb(plate) {
     edit_button.addEventListener('click', () => {
       let userResponse = confirm("Do you want to edit existing feedback?");
       if (userResponse) {
-        array_of_feedbacks = []
-        plate.childNodes.forEach(element => {
-          labels = element.getElementsByTagName('label');
-          textarea = labels[0].children[0]
-          scorearea = labels[1].children[0]
-          array_of_feedbacks.push([textarea.value, scorearea.value]);
-        });
-        addFeedbackToTable(array_of_feedbacks, title, "edit");
+        addFeedbackToTable(get_current_feedbacks(plate), title, "edit");
       }
     })
     addFeedbackToTable(array_of_feedbacks, title, "save");
@@ -344,14 +349,7 @@ function received_feedbacks(content, title) {
     edit_button.addEventListener('click', () => {
       let userResponse = confirm("Do you want to edit existing feedback?");
       if (userResponse) {
-        array_of_feedbacks = []
-        plate.childNodes.forEach(element => {
-          labels = element.getElementsByTagName('label');
-          textarea = labels[0].children[0]
-          scorearea = labels[1].children[0]
-          array_of_feedbacks.push([textarea.value, scorearea.value]);
-        });
-        addFeedbackToTable(array_of_feedbacks, title, "edit");
+        addFeedbackToTable(get_current_feedbacks(plate), title, "edit");
       }
     })
   }
